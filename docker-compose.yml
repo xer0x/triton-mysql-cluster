@@ -1,0 +1,27 @@
+data:
+  image: tianon/true
+  volumes:
+    - /var/lib/mysql
+mysql:
+  image: mysql:5.7
+  volumes_from:
+    - data
+  #links:
+    #- consul
+  #ports:
+    #- 8384
+  restart: always
+  mem_limit: 1024m
+  environment:
+    - MYSQL_ROOT_PASSWORD=asdfASDF1234zxcv
+#consul:
+  #image: gliderlabs/consul-server
+  #command: -bootstrap -ui-dir /ui
+  #expose:
+  #- 8400
+  #- 8500
+  #- 53/udp
+  #restart: always
+  #mem_limit: 256m
+cloner:
+  image: triton-mysql-cloner
