@@ -3,7 +3,7 @@ data:
   volumes:
     - /var/lib/mysql
 mysql:
-  image: mysql:5.7
+  image: mysql:5.6
   volumes_from:
     - data
   #links:
@@ -13,7 +13,8 @@ mysql:
   restart: always
   mem_limit: 1024m
   environment:
-    - MYSQL_ROOT_PASSWORD=asdfASDF1234zxcv
+    - MYSQL_ROOT_PASSWORD
+    - MYSQL_ALLOW_EMPTY_PASSWORD
 #consul:
   #image: gliderlabs/consul-server
   #command: -bootstrap -ui-dir /ui
@@ -24,4 +25,14 @@ mysql:
   #restart: always
   #mem_limit: 256m
 cloner:
-  image: triton-mysql-cloner
+  image: xer0x/triton-mysql-cloner
+  volumes_from:
+    - data
+  links:
+    - mysql
+  entrypoint:
+    # - "top"
+    - "/start.sh"
+  environment:
+    - MYSQL_ROOT_PASSWORD
+    - MYSQL_ALLOW_EMPTY_PASSWORD
