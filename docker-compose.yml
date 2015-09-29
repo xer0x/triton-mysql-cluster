@@ -3,14 +3,14 @@ data:
   volumes:
     - /var/lib/mysql
 mysql:
-  image: mysql:5.6
+  image: xer0x/triton-mysql
   volumes_from:
     - data
   #links:
     #- consul
   #ports:
     #- 8384
-  restart: always
+  #restart: always
   mem_limit: 1024m
   environment:
     - MYSQL_ROOT_PASSWORD
@@ -31,8 +31,23 @@ cloner:
   links:
     - mysql
   entrypoint:
-    # - "top"
-    - "/start.sh"
+    #- "top"
+    #- "sh -c 'while [ 1 ]; do sleep 60; done'"
+    # - "/start.sh"
+    #- "sleep 999999999"
   environment:
     - MYSQL_ROOT_PASSWORD
     - MYSQL_ALLOW_EMPTY_PASSWORD
+
+# WHAT IF:
+#
+# mysql-slave:
+#   image: triton-mysql
+#   environment:
+#     triton_mysql_mode: master
+# mysql-master:
+#   image: triton-mysql
+#   environment:
+#     triton_mysql_mode: master
+#
+# MySQL 5.7 supports multi-master, but <5.7 is only single master
