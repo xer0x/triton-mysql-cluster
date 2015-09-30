@@ -3,9 +3,17 @@
 set -x
 set -e
 
+# TODO: Add support for stop/start of server for innoDB
+# TODO: Add support for exbackup for innoDB to avoid start/stop
+# TODO: Add support for GTID replication
+# TODO: HA and Slave promotion
+
 # Each Mysqld must have a unique ID
-CONTAINER_ID_NUMBER=1
-MASTER_IP=192.168.1.2
+CONTAINER_ID_NUMBER=$RANDOM
+master_host="master"
+master_port=3306
+repl_user=slaveuser
+repl_pass=slavepass
 
 # Mysql Configuration File
 #
@@ -21,10 +29,18 @@ function write_my_cnf () {
 		server-id=$CONTAINER_ID_NUMBER
 		log-bin=mysql-bin
 		## enable `show slave hosts`:
-		report_host=$MASTER_IP
+		report_host=$master_host
 		## flags for consistent innodb:
 		#innodb_flush_log_at_trx_commit=1
 		#sync_binlog=1
+	EOF
+}
+
+function write_create_repl_user_sql () {
+    FILE=/docker-entrypoint-initdb.db/create_repl_user.sql
+	cat >> $FILE <<-EOF
+		CREATE USER '$repl_user'@'%' IDENTIFIED BY '$repl_pass';
+		GRANT REPLICATION SLAVE ON *.* TO '$repl_user'@'%';
 	EOF
 }
 
@@ -34,22 +50,14 @@ function write_change_master_sql () {
 	SQL_FILE=/docker-entrypoint-initdb.d/change_master_to.sql
 	cat >> $SQL_FILE <<-EOF
 		CHANGE MASTER TO
-		MASTER_HOST='$master_host_name',
-		MASTER_USER='$repl_user',
-		MASTER_PASSWORD='$repl_pass',
-		MASTER_PORT = $port
-		MASTER_CONNECT_RETRY = $interval
-		MASTER_LOG_FILE='$binlog_file_name',
-		MASTER_LOG_POS=$binlog_position;
-		RELAY_LOG_FILE = 'relay_log_name'
-		RELAY_LOG_POS = relay_log_pos
-		MASTER_SSL = {0|1}
-		MASTER_SSL_CA = 'ca_file_name'
-		MASTER_SSL_CAPATH = 'ca_directory_name'
-		MASTER_SSL_CERT = 'cert_file_name'
-		MASTER_SSL_KEY = 'key_file_name'
-		MASTER_SSL_CIPHER = 'cipher_list'
-		CHANGE MASTER TO changes the parameters tha
+		MASTER_HOST           = '$master_host',
+		MASTER_USER           = '$repl_user',
+		MASTER_PASSWORD       = '$repl_pass',
+		MASTER_PORT           = $master_port,
+		MASTER_CONNECT_RETRY  = 60,
+		MASTER_LOG_FILE       = '$master_log_file',
+		MASTER_LOG_POS        = $master_log_pos,
+		MASTER_SSL            = 0;
 	EOF
 }
 
@@ -65,6 +73,7 @@ case $TRITON_MYSQL_ROLE in
 	"master" )
 		echo "Running: Master"
 		write_my_cnf
+		write_create_repl_user_sql
 		;;
 	"slave" )
 		echo "Running: Slave"
@@ -75,9 +84,10 @@ case $TRITON_MYSQL_ROLE in
 
 		CONTAINER_ID_NUMBER=2
 		write_my_cnf
+		write_create_repl_user_sql
 		write_change_master_sql
 
-		# Empty directory will stop the initialization of a new one
+		# Empty directory will stop the initialization of a new database
 		mkdir -p $DATADIR/mysql
 
 		;;
