@@ -2,7 +2,8 @@ data:
   image: tianon/true
   volumes:
     - /var/lib/mysql
-mysql:
+#mysql:
+master:
   image: xer0x/triton-mysql
   volumes_from:
     - data
@@ -15,6 +16,21 @@ mysql:
   environment:
     - MYSQL_ROOT_PASSWORD
     - MYSQL_ALLOW_EMPTY_PASSWORD
+    - TRITON_MYSQL_ROLE=master
+slave:
+  image: xer0x/triton-mysql
+  #volumes_from:
+  #  - data
+  #links:
+    #- consul
+  #ports:
+    #- 8384
+  #restart: always
+  mem_limit: 1024m
+  environment:
+    - MYSQL_ROOT_PASSWORD
+    - MYSQL_ALLOW_EMPTY_PASSWORD
+    - TRITON_MYSQL_ROLE=slave
 #consul:
   #image: gliderlabs/consul-server
   #command: -bootstrap -ui-dir /ui
@@ -24,20 +40,20 @@ mysql:
   #- 53/udp
   #restart: always
   #mem_limit: 256m
-cloner:
-  image: xer0x/triton-mysql-cloner
-  volumes_from:
-    - data
-  links:
-    - mysql
-  entrypoint:
-    #- "top"
-    #- "sh -c 'while [ 1 ]; do sleep 60; done'"
-    # - "/start.sh"
-    #- "sleep 999999999"
-  environment:
-    - MYSQL_ROOT_PASSWORD
-    - MYSQL_ALLOW_EMPTY_PASSWORD
+#cloner:
+#  image: xer0x/triton-mysql-cloner
+#  volumes_from:
+#    - data
+#  links:
+#    - mysql
+#  entrypoint:
+#    #- "top"
+#    #- "sh -c 'while [ 1 ]; do sleep 60; done'"
+#    # - "/start.sh"
+#    #- "sleep 999999999"
+#  environment:
+#    - MYSQL_ROOT_PASSWORD
+#    - MYSQL_ALLOW_EMPTY_PASSWORD
 
 # WHAT IF:
 #
