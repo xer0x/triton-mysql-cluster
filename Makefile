@@ -22,7 +22,7 @@ deploy:
 
 clean:
 	docker-compose --project-name=my stop
-	docker-compose --project-name=my rm -f -v mysql cloner
+	docker-compose --project-name=my rm -f -v master slave
 	docker-compose --project-name=my rm -f -v data
 
 test:
