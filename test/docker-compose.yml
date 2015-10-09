@@ -1,0 +1,9 @@
+tester:
+  image: xer0x/triton-mysql-tester
+  external_links:
+    - my_master_1:master
+    - my_slave_1:slave
+  environment:
+    - MYSQL_ROOT_PASSWORD
+    - MYSQL_ALLOW_EMPTY_PASSWORD
+    - TRITON_MYSQL_ROLE=master
