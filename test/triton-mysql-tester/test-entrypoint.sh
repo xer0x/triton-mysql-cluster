@@ -53,3 +53,5 @@ wait_for slave mysql_slave
 echo "SELECT message FROM messages ;" | "${mysql_master[@]}"
 
 #exec "$@"
+
+# vim: noexpandtab : copyindent : preserveindent : softtabstop=0 : shiftwidth=4 : tabstop=4
