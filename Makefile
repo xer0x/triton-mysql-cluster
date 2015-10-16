@@ -73,6 +73,11 @@ test2: clean-test2
 	@echo it is lame that it hides this error
 	@echo
 
+# A real test2 needs to connect to my_master_1 to copy the data
+# then to upload it to /drew.miller/public/mysql.backup.tar.gz
+# then do the usual above
+# ...adding a link for replication would be nice too
+
 clean-test2:
 	@docker rm -f my_test_2 || true
 
