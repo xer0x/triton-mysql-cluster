@@ -2,10 +2,12 @@
 
 export MYSQL_ROOT_PASSWORD=any_password_will_do
 
-make clean;
+make clean
 
-make build;
+make build
 
-make deploy;
+make deploy
 
-make test;
+make test
+
+make test2
