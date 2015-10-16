@@ -60,6 +60,11 @@ function write_create_repl_user_sql () {
 	EOF
 }
 
+function find_master_log_file () {
+	MASTER_STATUS=$1
+	tail -n 1 "$MASTER_STATUS" | cut -f 1
+}
+
 function find_master_log_pos () {
 	MASTER_STATUS=$1
 	tail -n 1 "$MASTER_STATUS" | cut -f 2
@@ -71,6 +76,7 @@ function write_change_master_sql () {
 
 	if [ -e "$DATADIR/master.status" ]; then
 		master_log_pos=$(find_master_log_pos "$DATADIR/master.status")
+		master_log_file=$(find_master_log_file "$DATADIR/master.status")
 	fi
 
 	# TODO: Log position if cloned from slave (slave.status)
