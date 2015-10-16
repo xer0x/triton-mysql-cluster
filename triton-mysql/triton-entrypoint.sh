@@ -29,10 +29,6 @@ export MYSQL_ALLOW_EMPTY_PASSWORD
 #slave:  https://dev.mysql.com/doc/refman/5.0/en/replication-howto-slavebaseconfig.html
 function write_my_cnf () {
 	cat >> ~/.my.cnf <<-EOF
-		[client]
-		#password=$MYSQL_ROOT_PASSWORD
-		#host=mysql
-
 		[mysqld]
 		server-id=$CONTAINER_ID_NUMBER
 		log-bin=/var/log/mysql/mysql-bin.log-
@@ -43,6 +39,16 @@ function write_my_cnf () {
 		#innodb_flush_log_at_trx_commit=1
 		#sync_binlog=1
 	EOF
+
+    FILE=$POST_INIT_SCRIPT_DIR/append_client_to_mycnf.sql
+	cat >> $FILE <<-EOF
+		cat >> ~/.my.cnf <<-EO_MYCNF
+			[client]
+			password=$MYSQL_ROOT_PASSWORD
+			#host=mysql
+		EO_MYCNF
+	EOF
+
 }
 
 function write_create_repl_user_sql () {
@@ -53,9 +59,21 @@ function write_create_repl_user_sql () {
 	EOF
 }
 
+function find_master_log_pos () {
+	MASTER_STATUS=$1
+	tail -n 1 "$MASTER_STATUS" | cut -f 2
+}
+
 function write_change_master_sql () {
 	# https://dev.mysql.com/doc/refman/5.0/en/change-master-to.html
 	# Warning: We are not using SSL.
+
+	if [ -e "$DATADIR/master.status" ]; then
+		master_log_pos=$(find_master_log_pos "$DATADIR/master.status")
+	fi
+
+	# TODO: Log position if cloned from slave (slave.status)
+
 	SQL_FILE=$POST_INIT_SCRIPT_DIR/change_master_to.sql
 	cat >> $SQL_FILE <<-EOF
 		CHANGE MASTER TO
@@ -67,6 +85,13 @@ function write_change_master_sql () {
 		MASTER_LOG_FILE       = '$master_log_file',
 		MASTER_LOG_POS        = $master_log_pos,
 		MASTER_SSL            = 0;
+	EOF
+}
+
+function write_unlock_tables_sql () {
+	SQL_FILE=$POST_INIT_SCRIPT_DIR/unlock_tables.sql
+	cat >> $SQL_FILE <<-EOF
+		UNLOCK TABLES;
 	EOF
 }
 
@@ -103,8 +128,10 @@ case $TRITON_MYSQL_ROLE in
 		echo "Nope, don't know how to do that yet..."
 
 		write_my_cnf
+
 		write_create_repl_user_sql
 		write_change_master_sql
+		write_unlock_tables_sql
 
 		# Do the magic
 

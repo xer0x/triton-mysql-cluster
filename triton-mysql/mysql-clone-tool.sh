@@ -1,34 +1,29 @@
+#!/usr/bin/env bash
 
+#function mysql () {
+#    command mysql -u root -p$MYSQL_ROOT_PASSWORD $@
+#}
 
 function set_datadir () {
-
-	# TODO: import a the `mysql --get-data-dir` command from triton-mysql/triton-entrypoint.sh
-
-	OS=$(uname -s)
-	MYSQL_DIR=/var/lib/mysql
-
-	if [ "$OS" == "Darwin" ]; then
-		# We assume Homebrew installed Mysql
-		MYSQL_DIR=/usr/local/var/mysql
-	fi
+	#MYSQL_DATA_DIR="$("$@" --verbose --help 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
+	MYSQL_DATA_DIR="$(mysqld --verbose --help 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
 }
 
-function add_client_to_mycnf {
-	cat >> ~/.my.cnf <<-EOF
-		[client]
-		password=$MYSQL_ROOT_PASSWORD
-		host=mysql
-	EOF
-}
+#function add_client_to_mycnf {
+#    cat >> ~/.my.cnf <<-EOF
+#        [client]
+#        password=$MYSQL_ROOT_PASSWORD
+#        host=mysql
+#    EOF
+#}
 
 # Export data
 # https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
 
+# lock_tables for 1 hour
 function lock_tables {
-	mysql & <<-EOSQL
-		FLUSH TABLES WITH READ LOCK;
-	EOSQL
-
+	local SQL="FLUSH TABLES WITH READ LOCK;"
+	cat <(echo "$SQL") <(sleep 3600) | mysql &
 	LOCK_PID=$!
 }
 
@@ -52,15 +47,20 @@ function get_master_status () {
 
 
 function archive () {
-	if [ "$1" == "" ]; then
+	local ARCHIVE=$1
+	if [ "$ARCHIVE" == "" ]; then
 		echo error: archive missing filename
-		return -1
+		return 1
 	fi
-	EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err mysql test performance_schema"
+	#EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err mysql test performance_schema"
+	EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err test performance_schema"
 	CWD=$(pwd)
-	cd $MYSQL_DIR
-	tar czf $1 -X <(echo "$EXCLUDE" | tr " " "\n") .
-	cd $CWD
+	set_datadir
+	cd "$MYSQL_DATA_DIR"
+	echo "SHOW MASTER STATUS;" | mysql > master.status
+	echo "SHOW SLAVE STATUS;" | mysql > slave.status
+	tar czf "$ARCHIVE" -X <(echo "$EXCLUDE" | tr " " "\n") .
+	cd "$CWD"
 }
 
 
@@ -78,7 +78,7 @@ function archive_master () {
 	# https://dev.mysql.com/doc/refman/5.6/en/replication-howto-rawdata.html
 
 	lock_tables
-	get_master_status > $MYSQL_DIR/master.status
+	get_master_status > "$MYSQL_DATA_DIR/master.status"
 	# TODO:XXX: stop mysql while copying or use xtraBackup/exbackup for innodb
 	archive /tmp/backup.tar.gz
 	unlock_tables
@@ -92,17 +92,44 @@ function archive_slave () {
 	echo TODO: archive_slave
 }
 
-function import_to_mysql () {
+#ARCHIVE=/tmp/backup.tar.gz
+function import_archive () {
 #https://dev.mysql.com/doc/refman/5.6/en/replication-howto-existingdata.html
 
 	echo import_to_mysql
-	echo TODO: everything
 
-	#curl gets these files
+	if [ "$1" == "" ]; then
+		echo error: missing archive filename
+		return 1
+	fi
 
-	# unlock tables -- sometimes needed?
+	local ARCHIVE=$1
+
+	get_archive "$ARCHIVE"
+
+	set_datadir
+
+	tar xvzf "$ARCHIVE" --directory "$MYSQL_DATA_DIR"
+
+	# unlock tables -- sometimes needed if the lock is set in the archive
+	#echo "UNLOCK TABLES;" | mysql
+	# TODO: write to scripts to be executed after startup?
+
 	# update slave status from master.status
+	# - modify triton_mysql:triton-entrypoint.sh write_change_master_sql to read position from master.status file
+
 	# replication configurure
+}
+
+function get_archive () {
+	local ARCHIVE=$1
+	if [ "$ARCHIVE" == "" ]; then
+		echo error: missing archive filename
+		return 1
+	fi
+
+	# TODO: retrieve from actual source
+	curl https://us-east.manta.joyent.com/drew.miller/public/mysql.backup.tar.gz -o "$ARCHIVE"
 }
 
 

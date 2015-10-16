@@ -7,7 +7,7 @@ master:
   image: xer0x/triton-mysql
   volumes_from:
     - data
-  #restart: always
+  restart: always
   mem_limit: 1024m
   environment:
     - MYSQL_ROOT_PASSWORD
@@ -17,7 +17,7 @@ slave:
   image: xer0x/triton-mysql
   links:
     - master
-  #restart: always
+  restart: always
   mem_limit: 1024m
   environment:
     - MYSQL_ROOT_PASSWORD

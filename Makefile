@@ -2,6 +2,7 @@
 .PHONY: deploy
 .PHONY: clean
 .PHONY: test
+.PHONY: clean-test2
 
 boot2docker:
 	docker-machine stop default
@@ -28,21 +29,30 @@ deploy:
 	docker-compose --project-name=my up -d --no-recreate --timeout 120
 
 clean: clean-test
-	docker-compose --project-name=my stop
-	docker-compose --project-name=my rm -f -v master slave
-	docker-compose --project-name=my rm -f -v data
+	@docker-compose --project-name=my stop
+	@docker-compose --project-name=my rm -f -v master slave
+	@docker-compose --project-name=my rm -f -v data
 
 clean-test:
-	cd test ; \
+	@cd test ; \
 		docker-compose --project-name=test stop ; \
 		docker-compose --project-name=test rm -f -v
 
 #test: clean build deploy
 test: clean-test
-	docker pull xer0x/triton-mysql-tester
-	cd test ; \
+	@docker pull xer0x/triton-mysql-tester
+	@cd test ; \
 		docker-compose --project-name=test up -d --no-recreate --timeout 120
 	#docker-compose --project-name=test stop
 	#docker-compose --project-name=test rm -f -v
+
+test2-dev: clean-test2
+	@docker run -d --name my_test_2 -v triton-mysql:/triton-mysql --entrypoint='sleep' xer0x/triton-mysql 999999
+
+test2: clean-test2
+	@docker run -d --name my_test_2 --entrypoint='sleep' xer0x/triton-mysql 999999
+
+clean-test2:
+	@docker rm -f my_test_2 || true
 
 # vim: noexpandtab : copyindent : preserveindent : softtabstop=0 : shiftwidth=4 : tabstop=4
