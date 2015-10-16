@@ -132,5 +132,9 @@ function get_archive () {
 	curl https://us-east.manta.joyent.com/drew.miller/public/mysql.backup.tar.gz -o "$ARCHIVE"
 }
 
+function import () {
+	import_archive /tmp/backup.tar.gz
+}
+
 
 # vim: filetype=sh : noexpandtab : copyindent : preserveindent : softtabstop=0 : shiftwidth=4 : tabstop=4
