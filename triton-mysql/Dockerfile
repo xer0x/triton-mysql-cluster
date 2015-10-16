@@ -20,6 +20,7 @@ RUN chmod +x /triton-entrypoint.sh
 
 ADD mysql-clone-tool.sh /mysql-clone-tool.sh
 ADD archive.sh /archive.sh
+ADD import.sh /import.sh
 
 ENTRYPOINT ["/triton-entrypoint.sh"]
 CMD ["mysqld", "--relay-log=mysqld-relay-bin"]
