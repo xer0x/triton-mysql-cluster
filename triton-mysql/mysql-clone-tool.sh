@@ -9,13 +9,13 @@ function set_datadir () {
 	MYSQL_DATA_DIR="$(mysqld --verbose --help 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
 }
 
-#function add_client_to_mycnf {
-#    cat >> ~/.my.cnf <<-EOF
-#        [client]
-#        password=$MYSQL_ROOT_PASSWORD
-#        host=mysql
-#    EOF
-#}
+function add_client_to_mycnf {
+	cat >> ~/.my.cnf <<-EOF
+		[client]
+		password=$MYSQL_ROOT_PASSWORD
+		#host=mysql
+	EOF
+}
 
 # Export data
 # https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
@@ -52,15 +52,19 @@ function archive () {
 		echo error: archive missing filename
 		return 1
 	fi
+	# Notes: if we exclude performance_schema mysql will complain when it starts
 	#EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err mysql test performance_schema"
-	EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err test performance_schema"
+	#EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err test performance_schema"
+	EXCLUDE="master.info auto.cnf relay-log.info machine.err machine.local.err test"
 	CWD=$(pwd)
+	add_client_to_mycnf
 	set_datadir
 	cd "$MYSQL_DATA_DIR"
 	echo "SHOW MASTER STATUS;" | mysql > master.status
 	echo "SHOW SLAVE STATUS;" | mysql > slave.status
 	tar czf "$ARCHIVE" -X <(echo "$EXCLUDE" | tr " " "\n") .
 	cd "$CWD"
+	echo Wrote "$ARCHIVE"
 }
 
 

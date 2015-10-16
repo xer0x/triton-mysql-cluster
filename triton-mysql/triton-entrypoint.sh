@@ -29,20 +29,21 @@ export MYSQL_ALLOW_EMPTY_PASSWORD
 #slave:  https://dev.mysql.com/doc/refman/5.0/en/replication-howto-slavebaseconfig.html
 function write_my_cnf () {
 	cat >> ~/.my.cnf <<-EOF
+		# Wrote at $(date):
 		[mysqld]
 		server-id=$CONTAINER_ID_NUMBER
 		log-bin=/var/log/mysql/mysql-bin.log-
 		log_bin=/var/log/mysql/mysql-bin.log_
-		## enable \`show slave hosts\`:
+		## report_host enables \`show slave hosts\`:
 		report_host=$master_host
 		## flags for consistent innodb:
 		#innodb_flush_log_at_trx_commit=1
 		#sync_binlog=1
 	EOF
 
-    FILE=$POST_INIT_SCRIPT_DIR/append_client_to_mycnf.sql
+    FILE=$POST_INIT_SCRIPT_DIR/append_client_to_mycnf.sh
 	cat >> $FILE <<-EOF
-		cat >> ~/.my.cnf <<-EO_MYCNF
+		cat > ~/.my.cnf <<-EO_MYCNF
 			[client]
 			password=$MYSQL_ROOT_PASSWORD
 			#host=mysql
@@ -126,6 +127,8 @@ case $TRITON_MYSQL_ROLE in
 		echo
 		echo "Fetching data from remote server"
 		echo "Nope, don't know how to do that yet..."
+
+		# bash /import.sh
 
 		write_my_cnf
 

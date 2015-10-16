@@ -53,16 +53,24 @@ test2: clean-test2
 	@echo DID YOU REMEMEBER: export MYSQL_ROOT_PASSWORD=any_password_will_do to whatever match start.sh
 	@echo 'Remember: apt-get update && apt-get install -y vim curl'
 	@#@echo Remember: curl https://us-east.manta.joyent.com/drew.miller/public/mysql.backup.tar.gz -o /tmp/backup.tar.gz
-	@echo Remember: docker exec -it my_test_2 bash
-	@echo Remember: bash /import.sh
+	@echo Remember: export TRITON_MYSQL_ROLE=slave
 	@echo
-	docker run -d --name my_test_2 --entrypoint='sleep' xer0x/triton-mysql 999999
-	docker exec -it my_test_2 bash -c 'apt-get update && apt-get install -y vim curl'
+	docker run -d --name my_test_2 \
+		--entrypoint='sleep' \
+		-e TRITON_MYSQL_ROLE=slave \
+		xer0x/triton-mysql 999999
+	#docker exec -it my_test_2 bash -c 'apt-get update && apt-get install -y vim curl procps'
 	docker exec -it my_test_2 bash /import.sh
 	@echo
-	@echo Remember: export TRITON_MYSQL_ROLE=slave
+	@echo After: bash /import.sh
+	@echo
+	@echo Remember: docker exec -it my_test_2 bash
 	@echo Remember: bash /triton-entrypoint.sh mysqld
+	@echo
 	@echo DISCLAIMER: this test is manual :P
+	@echo
+	@echo ps. replication does not work because we do not have a link to master.
+	@echo it is lame that it hides this error
 	@echo
 
 clean-test2:
